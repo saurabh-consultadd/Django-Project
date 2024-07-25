@@ -2,11 +2,33 @@
 
 # Overview
 
-The **Blog Application** is a Django-based web application which have models i.e., Posts and Comments. It has user authentication which allow only the author of the Post to Update and Delete the posts, but everyone has access to see the posts. Now similar for comments, only authenticated user can do a comment on any post and they have access to Update and Delete it. The application uses Django REST Framework to provide a set of RESTful API endpoints for interacting with the database.
+The **Blog Application** is a Django-based web application which uses the concept of Model, View and Serializer. It has user authentication as well that allow restricted permissions for certain operation.
 
+<br/>
 
+# Table of Contents
+1. [Features](#features)
+2. [Project Setup](#setup)
+3. [Project Structure](#structure)
+4. [API Endpoints](#endpoints)
+5. [Testing](#testing)
 
-# Project Setup
+<br/>
+
+# Features <a name = "features"></a>
+#### 1. Two models namely Posts and Comments which have some fields.
+#### 2. It uses in built user authentication that allows special permission to admin.
+#### 3. Author of the post can update and delete it. They also have permission to turn off comment.
+#### 4. Any authenticated user can do a comment on other's post.
+#### 5. Any user can reply to other's comment.
+#### 6. Admin has power to update and delete any post or comment.
+#### 7. We can see all posts and comments but cannot perform any operations.
+#### 8. A special feature that post with same content cannot be posted again.
+#### There are many more to explore...
+
+<br/>
+
+# Project Setup <a name = "setup"></a>
 
 ## Prerequisites
 
@@ -74,7 +96,22 @@ The **Blog Application** is a Django-based web application which have models i.e
    python manage.py runserver
    ```
 
-# API Endpoints
+<br/>
+
+# Project Structure <a name = "structure"></a>
+
+- `BlogApplication/`: Project settings and configuration.
+  - `settings.py`: Configuration settings.
+  - `urls.py`: Project-wide URL routing.
+- `blog/`: Contains the Django app for Blog Application.
+  - `models.py`: Defines the `Posts` and `Comments` models.
+  - `views.py`: Contains API views for posts and comments.
+  - `serializers.py`: Serializers for the models.
+  - `urls.py`: URL routing for the app.
+
+<br/>
+
+# API Endpoints <a name = "endpoints"></a>
 
 ## Create User
 - Method: POST
@@ -106,20 +143,20 @@ The **Blog Application** is a Django-based web application which have models i.e
  - Method: POST
 - Endpoint: posts/
 - Screenshot:
-<img width="1019" alt="Screenshot 2024-07-23 at 12 46 20 PM" src="https://github.com/user-attachments/assets/c462f054-a1b4-4bb3-ba6a-4529dc73ae53">
+<img width="1014" alt="Screenshot 2024-07-24 at 12 26 39 PM" src="https://github.com/user-attachments/assets/ab66fdb9-0248-42f0-8903-8ea7be5db343">
 
 ## Comments Endpoints
 ### 1. Add Comment
  - Method: POST
 - Endpoint: comments/
 - Screenshot:
-<img width="1010" alt="Screenshot 2024-07-23 at 12 47 08 PM" src="https://github.com/user-attachments/assets/d2fde1c6-ad16-408b-b9e6-76f878269b32">
+<img width="1018" alt="Screenshot 2024-07-24 at 12 56 19 PM" src="https://github.com/user-attachments/assets/26afd889-6e11-49e3-9ade-d7f8a922b144">
 
 ### 2. Get comment
  - Method: POST
 - Endpoint: comments/
 - Screenshot:
-<img width="1012" alt="Screenshot 2024-07-23 at 12 47 21 PM" src="https://github.com/user-attachments/assets/dea72363-f275-4012-8851-038a00ea99f2">
+<img width="1019" alt="Screenshot 2024-07-24 at 12 55 50 PM" src="https://github.com/user-attachments/assets/e0bc9a0e-c777-44e0-a555-dfd7a903c7d8">
 
 ### 3. Update comment
  - Method: POST
@@ -131,10 +168,10 @@ The **Blog Application** is a Django-based web application which have models i.e
  - Method: POST
 - Endpoint: comments/
 - Screenshot:
-<img width="1020" alt="Screenshot 2024-07-23 at 12 48 29 PM" src="https://github.com/user-attachments/assets/e08ba4a7-b1cd-42bd-945a-ba5fdfa9d630">
+<img width="1017" alt="Screenshot 2024-07-24 at 12 56 11 PM" src="https://github.com/user-attachments/assets/70b2c649-005f-4d1f-ad74-3e9dfff89cea">
 
 
-# Testing
+# Testing <a name = "testing"></a>
 
 To run tests and check coverage:
 
@@ -164,25 +201,6 @@ To run tests and check coverage:
    coverage report
    ```
 
-## Project Structure
-
-- `BlogApplication/`: Project settings and configuration.
-  - `settings.py`: Configuration settings.
-  - `urls.py`: Project-wide URL routing.
-- `blog/`: Contains the Django app for Blog Application.
-  - `models.py`: Defines the `Posts` and `Comments` models.
-  - `views.py`: Contains API views for posts and comments.
-  - `serializers.py`: Serializers for the models.
-  - `urls.py`: URL routing for the app.
-
-
-<!-- ## Notes -->
-<!-- 
-- Ensure that MySQL server is running and accessible with the credentials provided.
-- Adjust database configurations in `settings.py` as necessary.
-
-For any issues or further questions, please refer to the [Django documentation](https://docs.djangoproject.com/en/stable/) or the [Django REST Framework documentation](https://www.django-rest-framework.org/).
-``` -->
-
-<!-- You can copy and paste this markdown into a `README.md` file in your project repository. It includes an overview of the project, setup instructions, details about the API endpoints, and testing guidelines. -->
+## Test Result:
+<img width="1118" alt="Screenshot 2024-07-25 at 11 51 39 AM" src="https://github.com/user-attachments/assets/f3656cd0-d614-4de8-a19a-67cb90a94739">
 

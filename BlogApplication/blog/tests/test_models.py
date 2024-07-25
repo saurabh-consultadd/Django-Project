@@ -13,7 +13,6 @@ def test_comment_str_method():
     comment = Comment.objects.create(post=post, comment_by=comment_by, text='Test Comment')
     assert str(comment) == f'Comment by {comment_by} on {post.title}'
 
-
 # ---------------------------------------------------------------------------------------------------   
 # ---------------------------------------------------------------------------------------------------    
 
@@ -27,4 +26,5 @@ def test_create_comment():
     post = Post.objects.create(title='Test Post', body='Test Body')
     comment = Comment.objects.create(post=post, comment_by="admin123", text='Test Comment')
     assert comment.id is not None
+
 

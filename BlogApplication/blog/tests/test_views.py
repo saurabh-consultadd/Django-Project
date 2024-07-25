@@ -5,252 +5,240 @@ from rest_framework.test import APIClient
 from blog.models import Post, Comment
 from django.contrib.auth.models import User
 
+@pytest.fixture
+def api_client():
+    return APIClient()
+
+@pytest.fixture
+def create_user():
+    return User.objects.create(username='testuser', password='password123')
 
 @pytest.mark.django_db
-def test_create_post_view():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('post-list')
-    data = {
-        'title': 'Test Post',
-        'author': 'Test Author',
-        'body': 'Test Body',
-        'category': 'Test Category'
-    }
-    response = client.post(url, data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
-    assert Post.objects.filter(title='Test Post').exists()
+class TestPostViewSet:
 
-# without author
-@pytest.mark.django_db
-def test_create_post_without_author():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('post-list')
-    data = {
-        'title': 'Test Post',
-        'body': 'Test Body',
-        'category': 'Test Category'
-    }
-    response = client.post(url, data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
-    assert Post.objects.filter(title='Test Post').exists()
+    def test_create_post(self, api_client, create_user):
+        url = reverse('post-list')
+        api_client.force_authenticate(user=create_user)
 
+        data = {
+            'title': 'New Post',
+            'body': 'New Body Content'
+        }
+        response = api_client.post(url, data, format='json')
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Post.objects.filter(title='New Post').exists()
 
-# body as number
-@pytest.mark.django_db
-def test_create_post_body_number():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('post-list')
-    data = {
-        'title': 'Test Post',
-        'author': 'Test Author',
-        'body': 123,
-        'category': 'Test Category'
-    }
-    response = client.post(url, data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
-    assert Post.objects.filter(title='Test Post').exists()
+    def test_update_post(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        url = reverse('post-detail', args=[post.id])
+        data = {
+            'title': 'Updated Post Title',
+            'body': 'Updated Body Content'
+        }
+        api_client.force_authenticate(user=create_user)
+        response = api_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        post.refresh_from_db()
+        assert post.title == 'Updated Post Title'
+
+    def test_delete_post(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        url = reverse('post-detail', args=[post.id])
+        api_client.force_authenticate(user=create_user)
+        response = api_client.delete(url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Post.objects.filter(id=post.id).exists()
+
+    def test_create_post_without_body(self, api_client, create_user):
+        url = reverse('post-list')
+        api_client.force_authenticate(user=create_user)
+
+        data = {
+            'title': 'Test Post Without Body',
+        }
+        response = api_client.post(url, data, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'body' in response.data
 
 
-# category as number
-@pytest.mark.django_db
-def test_create_post_category_number():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('post-list')
-    data = {
-        'title': 'Test Post',
-        'author': 'Test Author',
-        'body': 'Test Body',
-        'category': 123
-    }
-    response = client.post(url, data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
-    assert Post.objects.filter(title='Test Post').exists()
+    def test_update_post_by_non_author(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        url = reverse('post-detail', args=[post.id])
+        data = {
+            'title': 'Updated Test Post',
+            'body': 'Updated Body Content'
+        }
+        other_user = User.objects.create(username='otheruser', password='password123')
+        api_client.force_authenticate(user=other_user)
+        response = api_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        post.refresh_from_db()
+        assert post.title != 'Updated Test Post'  # Ensure post title is not updated
+
+    def test_delete_post_by_non_author(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        url = reverse('post-detail', args=[post.id])
+        # Create a different user
+        other_user = User.objects.create(username='otheruser', password='password123')
+        api_client.force_authenticate(user=other_user)
+        response = api_client.delete(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Post.objects.filter(id=post.id).exists()
 
 
-@pytest.mark.django_db
-def test_retrieve_post_view():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('post-detail', kwargs={'pk': post.pk})
-    response = client.get(url)
-    assert response.status_code == status.HTTP_200_OK
-    assert response.data['title'] == 'Test Post'
+    def test_list_posts(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post 1', body='Test Body Content', author=create_user)
+        url = reverse('post-list')
+        api_client.force_authenticate(user=create_user)
+
+        response = api_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]['title'] == 'Test Post 1'
 
 
-@pytest.mark.django_db
-def test_update_post_view():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author=user.username, body='Test Body')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    # client.credentials(HTTP_AUTHORIZATION='Basic ' + 'testuser:password'.encode('utf-8').decode('utf-8'))
+    def test_create_post_by_admin(self, api_client):
+        admin = User.objects.create(username='otheruser', password='password123', is_staff=True)
+        url = reverse('post-list')
+        api_client.force_authenticate(user=admin)
+        data = {
+            'title': 'New Post',
+            'body': 'New Body Content'
+        }
+        response = api_client.post(url, data, format='json')
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Post.objects.filter(title='New Post').exists()
 
-    url = reverse('post-detail', kwargs={'pk': post.pk})
-    updated_data = {
-        'title': 'Updated Post',
-        'author': 'Updated Author',
-        'body': 'Updated Body',
-    }
-    response = client.put(url, updated_data, format='json')
-    assert response.status_code == status.HTTP_200_OK
-    updated_post = Post.objects.get(pk=post.pk)
-    assert updated_post.title == 'Updated Post'
-    assert updated_post.author == user.username
-    assert updated_post.body == 'Updated Body'
+    def test_update_post_by_admin(self, api_client):
+        admin = User.objects.create(username='otheruser', password='password123', is_staff=True)
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=admin)
+        url = reverse('post-detail', args=[post.id])
+        data = {
+            'title': 'Updated Test Post',
+            'body': 'Updated Body Content'
+        }
+        api_client.force_authenticate(user=admin)
+        response = api_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        post.refresh_from_db()
+        assert post.title == 'Updated Test Post'
 
-
-# without author
-@pytest.mark.django_db
-def test_update_post_without_author():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author=user.username, body='Test Body')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('post-detail', kwargs={'pk': post.pk})
-    updated_data = {
-        'title': 'Updated Post',
-        'body': 'Updated Body',
-    }
-    response = client.put(url, updated_data, format='json')
-    assert response.status_code == status.HTTP_200_OK
-    updated_post = Post.objects.get(pk=post.pk)
-    assert updated_post.title == 'Updated Post'
-    assert updated_post.body == 'Updated Body'
+    def test_delete_post_by_admin(self, api_client):
+        admin = User.objects.create(username='otheruser', password='password123', is_staff=True)
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=admin)
+        url = reverse('post-detail', args=[post.id])
+        api_client.force_authenticate(user=admin)
+        response = api_client.delete(url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Post.objects.filter(id=post.id).exists()
 
 
-@pytest.mark.django_db
-def test_delete_post_view():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author=user.username, body='Test Body')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('post-detail', kwargs={'pk': post.pk})
-    response = client.delete(url)
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-    # assert not Post.objects.filter(pk=post.pk).exists()
-
-
-# ---------------------------------------------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------–––––––––––––––––––––––-------
+# ------------------------------------------------------------------------------–––––––––––––––––––––––-------
+# ------------------------------------------------------------------------------–––––––––––––––––––––––-------
 
 
 @pytest.mark.django_db
-def test_create_comment_view():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('comment-list')
-    data = {
-        "post": post.pk,
-        "comment_by": "Anonymous",
-        "text": "Test Comment"
-    }
-    response = client.post(url, data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
-    # assert not Comment.objects.filter(text='Test Comment').exists()
+class TestCommentViewSet:
+
+    def test_create_comment(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        url = reverse('comment-list')
+        api_client.force_authenticate(user=create_user)
+
+        data = {
+            'post': post.id,
+            'text': 'Test Comment Text'
+        }
+        response = api_client.post(url, data, format='json')
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Comment.objects.filter(text='Test Comment Text').exists()
+
+    def test_update_comment(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        comment = Comment.objects.create(post=post, text='Test Comment', comment_by=create_user)
+        url = reverse('comment-detail', args=[comment.id])
+        data = {
+            'text': 'Updated Comment Text'
+        }
+        # Create a different user
+        other_user = User.objects.create(username='otheruser', password='password123')
+        api_client.force_authenticate(user=other_user)
+        response = api_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        comment.refresh_from_db()
+        assert comment.text != 'Updated Comment Text'
+
+    def test_delete_comment(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        comment = Comment.objects.create(post=post, text='Test Comment', comment_by=create_user)
+        url = reverse('comment-detail', args=[comment.id])
+        api_client.force_authenticate(user=create_user)
+        response = api_client.delete(url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Comment.objects.filter(id=comment.id).exists()
 
 
-# without comment_by
-@pytest.mark.django_db
-def test_create_comment_without_commentby():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('comment-list')
-    data = {
-        "post": post.pk,
-        "text": "Test Comment"
-    }
-    response = client.post(url, data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
+    def test_create_comment_by_author(self, api_client):
+        admin = User.objects.create(username='otheruser', password='password123', is_staff=True)
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=admin)
+        url = reverse('comment-list')
+        api_client.force_authenticate(user=admin)
+        data = {
+            'post': post.id,
+            'text': 'Test Comment Text'
+        }
+        response = api_client.post(url, data, format='json')
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Comment.objects.filter(text='Test Comment Text').exists()
+
+    def test_update_comment_by_author(self, api_client, create_user):
+        admin = User.objects.create(username='otheruser', password='password123', is_staff=True)
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        comment = Comment.objects.create(post=post, text='Test Comment', comment_by=create_user)
+        url = reverse('comment-detail', args=[comment.id])
+        data = {
+            'text': 'Updated Comment Text'
+        }
+        api_client.force_authenticate(user=admin)
+        response = api_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        comment.refresh_from_db()
+        assert not comment.text == 'Updated Comment Text'
+    
+    def test_delete_comment_by_author(self, api_client, create_user):
+        admin = User.objects.create(username='otheruser', password='password123', is_staff=True)
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=admin)
+        comment = Comment.objects.create(post=post, text='Test Comment', comment_by=create_user)
+        url = reverse('comment-detail', args=[comment.id])
+        api_client.force_authenticate(user=admin)
+        response = api_client.delete(url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Comment.objects.filter(id=comment.id).exists()
 
 
-# text as number
-@pytest.mark.django_db
-def test_create_comment_text_number():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('comment-list')
-    data = {
-        "post": post.pk,
-        "comment_by": "Anonymous",
-        "text": 123
-    }
-    response = client.post(url, data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
+    def test_update_comment_by_non_author(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        comment = Comment.objects.create(post=post, text='Test Comment', comment_by=create_user)
+        url = reverse('comment-detail', args=[comment.id])
+        data = {
+            'text': 'Updated Comment Text'
+        }
+        other_user = User.objects.create(username='otheruser', password='password123')
+        api_client.force_authenticate(user=other_user)
+        response = api_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        comment.refresh_from_db()
+        assert comment.text != 'Updated Comment Text'
 
+    def test_delete_comment_by_non_author(self, api_client, create_user):
+        post = Post.objects.create(title='Test Post', body='Test Body Content', author=create_user)
+        comment = Comment.objects.create(post=post, text='Test Comment', comment_by=create_user)
+        url = reverse('comment-detail', args=[comment.id])
+        # Create a different user
+        other_user = User.objects.create(username='otheruser', password='password123')
+        api_client.force_authenticate(user=other_user)
+        response = api_client.delete(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Comment.objects.filter(id=comment.id).exists()
 
-# text as number and without comment by
-@pytest.mark.django_db
-def test_create_comment_text_commentby():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('comment-list')
-    data = {
-        "post": post.pk,
-        "text": 123
-    }
-    response = client.post(url, data, format='json')
-    assert response.status_code == status.HTTP_201_CREATED
-
-
-@pytest.mark.django_db
-def test_retrieve_comment_view():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
-    comment = Comment.objects.create(post=post, comment_by=user.username, text='Test Comment')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('comment-detail', kwargs={'pk': comment.pk})
-    response = client.get(url)
-    # assert response.status_code == status.HTTP_200_OK
-    assert response.data['text'] == 'Test Comment'
-
-
-@pytest.mark.django_db
-def test_update_comment_view():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author=user.username, body='Test Body')
-    comment = Comment.objects.create(post=post, comment_by=user.username, text='Test Comment')
-    client = APIClient()
-    client.force_authenticate(user=user)
-
-    url = reverse('comment-detail', kwargs={'pk': comment.pk})
-    updated_data = {
-        'post': post.pk,
-        'text': 'Updated Comment',
-    }
-    response = client.put(url, updated_data, format='json')
-    updated_comment = Comment.objects.get(pk=comment.pk)
-    assert response.status_code == status.HTTP_200_OK
-    # assert updated_comment.post == post.pk
-    # assert not updated_comment.text == 'Updated Body'
-
-
-@pytest.mark.django_db
-def test_delete_comment_view():
-    user = User.objects.create_user(username='testuser', password='testpassword', is_staff=True)
-    post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
-    comment = Comment.objects.create(post=post, comment_by=user.username, text='Test Comment')
-    client = APIClient()
-    client.force_authenticate(user=user)
-    url = reverse('comment-detail', kwargs={'pk': comment.pk})
-    response = client.delete(url)
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-    # assert not Comment.objects.filter(pk=comment.pk).exists()

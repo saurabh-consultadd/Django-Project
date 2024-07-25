@@ -3,7 +3,6 @@ from blog.serializer import PostSerializer, CommentSerializer, UserSerializer
 from blog.models import Post, Comment
 from django.contrib.auth.models import User
 
-
 @pytest.mark.django_db
 def test_post_serializer():
     post_data = {
@@ -19,8 +18,6 @@ def test_post_serializer():
     assert serializer.data['author'] == post_data['author']
     assert serializer.data['body'] == post_data['body']
 
-# ---------------------------------------------------------------------------------------------------    
-
 @pytest.mark.django_db
 def test_comment_serializer():
     post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
@@ -30,25 +27,8 @@ def test_comment_serializer():
     }
     comment = Comment.objects.create(**comment_data)
     serializer = CommentSerializer(instance=comment)
-
-    # Assert serialized data matches the original data
     assert serializer.data['text'] == comment_data['text']
     assert serializer.data['post'] == post.pk
-
-# ---------------------------------------------------------------------------------------------------    
-
-# @pytest.mark.django_db
-# def test_category_serializer():
-#     category_data = {
-#         'name': 'Test Category',
-#     }
-#     category = Category.objects.create(**category_data)
-#     serializer = CategorySerializer(instance=category)
-
-#     # Assert serialized data matches the original data
-#     assert serializer.data['name'] == category_data['name']
-
-# ---------------------------------------------------------------------------------------------------    
 
 @pytest.mark.django_db
 def test_user_serializer():
@@ -58,6 +38,35 @@ def test_user_serializer():
     }
     user = User.objects.create_user(**user_data)
     serializer = UserSerializer(instance=user)
-
-    # Assert serialized data matches the original data
     assert serializer.data['username'] == user_data['username']
+
+@pytest.mark.django_db
+def test_post_serializer_validation():
+    invalid_data = {
+        'title': '',
+        'body': 'Test Body',
+    }
+    serializer = PostSerializer(data=invalid_data)
+    assert not serializer.is_valid()
+    assert 'title' in serializer.errors
+
+@pytest.mark.django_db
+def test_comment_serializer_validation():
+    post = Post.objects.create(title='Test Post', author='Test Author', body='Test Body')
+    invalid_data = {
+        'post': post,
+        'text': '',
+    }
+    serializer = CommentSerializer(data=invalid_data)
+    assert not serializer.is_valid()
+    assert 'text' in serializer.errors
+
+@pytest.mark.django_db
+def test_user_serializer_validation():
+    invalid_data = {
+        'username': '',
+        'password': 'testpassword',
+    }
+    serializer = UserSerializer(data=invalid_data)
+    assert not serializer.is_valid()
+    assert 'username' in serializer.errors
