@@ -2,7 +2,7 @@
 
 # Overview
 
-The **Blog Application** is a Django-based web application which uses the concept of Model, View and Serializer. It has user authentication as well that allow restricted permissions for certain operation.
+The **Blog Application** is a Django-based web application which uses the concept of Model, View and Serializer. It has user authentication as well that allow restricted permissions for certain operation. It also have docker file and logger to track all activities.
 
 <br/>
 
@@ -12,6 +12,8 @@ The **Blog Application** is a Django-based web application which uses the concep
 3. [Project Structure](#structure)
 4. [API Endpoints](#endpoints)
 5. [Testing](#testing)
+6. [Docker](#docker)
+7. [Logger](#logger)
 
 <br/>
 
@@ -36,7 +38,9 @@ The **Blog Application** is a Django-based web application which uses the concep
 - Django 
 - Django REST Framework 
 - PostgreSQL
-- pytest 
+- Pytest 
+- Docker
+- Logger
 
 ## Installation Steps
 
@@ -204,3 +208,165 @@ To run tests and check coverage:
 ## Test Result:
 <img width="1118" alt="Screenshot 2024-07-25 at 11 51 39 AM" src="https://github.com/user-attachments/assets/f3656cd0-d614-4de8-a19a-67cb90a94739">
 
+<br/><br/>
+
+# Docker <a name = "docker"></a>
+
+## Installation Steps
+
+1. **Download Docker Desktop for your system**
+
+2. **Go to the path where manage.py file is stored**
+
+3. **Create a new file "Dockerfile"**
+   ```bash
+   FROM python:3.12
+
+   ENV PYTHONDONTWRITEBYTECODE=1
+   ENV PYTHONUNBUFFERED=1
+
+   WORKDIR /app
+
+   COPY requirements.txt .
+   RUN pip install --upgrade pip
+   RUN pip install -r requirements.txt
+
+   COPY . .
+
+   RUN mkdir -p /app/logs
+
+   RUN chmod +x /app/django.sh
+
+   EXPOSE 8000
+   ENTRYPOINT ["/app/django.sh"]
+   ```
+
+4. **Create file "django.sh"**
+   ```bash
+   #!/bin/bash
+   echo "Create migrations"
+   python manage.py makemigrations blog
+   echo "******************************"
+
+   echo "Migrate"
+   python manage.py migrate
+   echo "******************************"
+
+   echo "Start server"
+   python manage.py runserver 0.0.0.0:8000
+   ```
+
+5. **Create file "docker-compose.yml"**
+   ```bash
+   services:
+      djangoapp:
+         build: .
+         ports:
+            - "8000:8000"
+         depends_on:
+            - blogdb
+         environment:
+            DB_HOST: blogdb
+            DB_PORT: 5432
+            DB_NAME: blogdb
+            DB_USER: postgres
+            DB_PASSWORD: password
+            DJANGO_SETTINGS_MODULE: BlogApplication.settings
+         volumes:
+            - ./logs:/app/logs
+
+      blogdb:
+         image: postgres:latest
+         volumes:
+            - postgres_data:/var/lib/postgresql/data
+         environment:
+            POSTGRES_DB: blogdb
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: password
+
+      volumes:
+      postgres_data:
+
+   ```
+
+6. **Open the terminal and go to "Dockerfile" path and run command**
+   ```bash
+    docker-compose up
+   ```
+
+7. **This will build docker containers and images:**
+<img width="1063" alt="Screenshot 2024-07-29 at 12 46 35 PM" src="https://github.com/user-attachments/assets/6a182759-2c43-4dcd-a2e8-b8e7b73cf926">
+<img width="1076" alt="Screenshot 2024-07-29 at 12 46 46 PM" src="https://github.com/user-attachments/assets/d5691cc8-5133-45de-b740-98c96d55e4bd">
+
+<br/><br/>
+
+# Logger <a name = "logger"></a>
+
+A logger is the entry point into the logging system. Each logger is a named bucket to which messages can be written for processing.
+
+A logger is configured to have a log level. This log level describes the severity of the messages that the logger will handle. Python defines the following log levels:
+
+- DEBUG: Low level system information for debugging purposes
+- INFO: General system information
+- WARNING: Information describing a minor problem that has occurred.
+- ERROR: Information describing a major problem that has occurred.
+- CRITICAL: Information describing a critical problem that has occurred.
+
+#### Note: When we use low level logger like DEBUG then we can access all high level logger but vice-versa is not true.
+
+## Setup:
+1. **Go to settings.py and write following code:**
+```bash
+import os
+
+# Logger
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'application_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'application.log'),
+            'maxBytes': 1024*1024*10,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console', 'application_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+```
+<br/>
+
+2. **Add logging to views.py:**
+```bash
+import logging
+
+logger = logging.getLogger('blog')
+```
+
+3. **Now we can use logger before or after each operations such as:**
+- *logger.info(f'Post created: {serializer.instance}')*
+- *logger.debug(f'Searching for posts with query: {search_query}')*
+- *logger.warning(f'Comment creation denied for post: {post.id} as comments are not allowed.')*
