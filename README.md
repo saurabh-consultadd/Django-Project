@@ -298,7 +298,7 @@ To run tests and check coverage:
 <img width="1063" alt="Screenshot 2024-07-29 at 12 46 35 PM" src="https://github.com/user-attachments/assets/6a182759-2c43-4dcd-a2e8-b8e7b73cf926">
 <img width="1076" alt="Screenshot 2024-07-29 at 12 46 46 PM" src="https://github.com/user-attachments/assets/d5691cc8-5133-45de-b740-98c96d55e4bd">
 
-<br/><br/>
+<br/>
 
 # Logger <a name = "logger"></a>
 
