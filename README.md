@@ -294,7 +294,11 @@ To run tests and check coverage:
     docker-compose up
    ```
 
-7. **This will build docker containers and images:**
+7. **Go to settings.py and change DB_HOST = blogdb, if you want to run it on local machine then change it to localhost.**
+
+<br/>
+
+8. **This will build docker containers and images:**
 <img width="1063" alt="Screenshot 2024-07-29 at 12 46 35 PM" src="https://github.com/user-attachments/assets/6a182759-2c43-4dcd-a2e8-b8e7b73cf926">
 <img width="1076" alt="Screenshot 2024-07-29 at 12 46 46 PM" src="https://github.com/user-attachments/assets/d5691cc8-5133-45de-b740-98c96d55e4bd">
 
@@ -312,7 +316,8 @@ A logger is configured to have a log level. This log level describes the severit
 - ERROR: Information describing a major problem that has occurred.
 - CRITICAL: Information describing a critical problem that has occurred.
 
-#### Note: When we use low level logger like DEBUG then we can access all high level logger but vice-versa is not true.
+#### Note: When we use low level logger like DEBUG then we can access all high level logger above it but vice-versa is not true.
+**Levels:** DEBUG < INFO < WARNING < ERROR < CRITICAL
 
 ## Setup:
 1. **Go to settings.py and write following code:**
