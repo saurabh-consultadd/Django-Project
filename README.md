@@ -47,7 +47,7 @@ The **Blog Application** is a Django-based web application which uses the concep
 1. **Clone the Repository:**
    ```bash
    git clone https://github.com/<yourusername>/Django-Project.git
-   cd inventory-management-system
+   cd BlogApplication
    ```
 
 2. **Create a Virtual Environment:**
@@ -73,7 +73,7 @@ The **Blog Application** is a Django-based web application which uses the concep
 5. **Configure the Database:**
    Ensure that PostgreSQL is running and create a database named `blogdb`.
 
-   Update the `DATABASES` setting in `inventory_management/settings.py`:
+   Update the `DATABASES` setting in `BlogApplication/settings.py`:
    ```python
    DATABASES = {
     'default': {
@@ -87,10 +87,11 @@ The **Blog Application** is a Django-based web application which uses the concep
 
 6. **Apply Migrations:**
    ```bash
+    python manage.py makemigrations
     python manage.py migrate
    ```
 
-7. **Create a Superuser:**
+7. **Create a Superuser(optional):**
    ```bash
    python manage.py createsuperuser
    ```
@@ -106,11 +107,12 @@ The **Blog Application** is a Django-based web application which uses the concep
 
 - `BlogApplication/`: Project settings and configuration.
   - `settings.py`: Configuration settings.
-  - `urls.py`: Project-wide URL routing.
+  - `urls.py`: Project-wise URL routing.
 - `blog/`: Contains the Django app for Blog Application.
   - `models.py`: Defines the `Posts` and `Comments` models.
   - `views.py`: Contains API views for posts and comments.
   - `serializers.py`: Serializers for the models.
+  - `permissions.py`: Permissions for different roles.
   - `urls.py`: URL routing for the app.
 
 <br/>
@@ -294,7 +296,7 @@ To run tests and check coverage:
     docker-compose up
    ```
 
-7. **Go to settings.py and change DB_HOST = blogdb, if you want to run it on local machine then change it to localhost.**
+7. **Go to settings.py and change `DB_HOST = blogdb`, if you want to run it on local machine then change it to `localhost`.**
 
 <br/>
 
