@@ -28,9 +28,7 @@ class CanCommentOnPost(BasePermission):
         # Allow permissions to author of the comment or admin
         if request.method in ['PUT', 'PATCH']:
             return obj.comment_by == request.user.username
-        # # Allow permissions to author of the post
-        # if request.method in ['DELETE']:
-        #     return obj.post.author == request.user.username
+        # Allow delete permissions to user who commented, author of the post and admin
         if request.method == 'DELETE':
             return obj.comment_by == request.user.username or obj.post.author == request.user.username or request.user.is_staff
         # For GET requests (read-only), allow any authenticated user
